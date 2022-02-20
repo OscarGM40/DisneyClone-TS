@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap");
+
+/* solo puedo acceder a las tres capas.Los nombres realmente son una convención,supongo que el orden es lo importante.La capa base son los estilos base */
+/* cualquier estilo aqui se aplicará siempre,pues es la base */
+@layer base { 
+  body { 
+     @apply bg-[#040714] text-[#f9f9f9] font-montserrat scrollbar-hide;
+  }
+}
+
+/* cualquier estilo que no sea base debo ponerlo en la capa de 
+componentes */
+@layer components {
+  .header-link {
+    @apply flex items-center space-x-2 cursor-pointer;
+  }
+
+  .span {
+    @apply relative uppercase text-base font-medium before:bg-[#f9f9f9] before:rounded-bl before:-bottom-1.5 before:h-0.5 before:inset-x-0 before:absolute before:transform before:origin-left before:scale-x-0 before:transition-all before:duration-200 group-hover:before:scale-x-100;
+  }
+
+  .brand {
+    @apply flex relative w-52 h-32 sm:w-64 sm:h-36 md:w-72 md:h-40 lg:w-80 lg:h-44 xl:w-96 xl:h-52 border-[3px] border-[#f9f9f9] border-opacity-10 rounded-lg cursor-pointer shadow-xl overflow-hidden hover:border-opacity-80 hover:shadow-2xl transform hover:scale-105 transition duration-200;
+  }
+
+  .video-container {
+   @apply hidden h-32 w-52 rounded-lg object-cover group-hover:inline sm:h-36 sm:w-64 md:h-40 md:w-72 lg:h-44 lg:w-80 xl:h-52 xl:w-96;    
+  }
+}
+
+@tailwind utilities;
