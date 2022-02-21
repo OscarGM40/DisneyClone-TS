@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next'
 import { Session } from 'next-auth'
-import { getSession, useSession } from 'next-auth/react'
+import { getSession, useSession } from 'next-auth/client'
 import Head from 'next/head'
 import Brands from '../components/Brands'
 import Header from '../components/Header'
@@ -25,7 +25,7 @@ export default function Home({
   top_ratedShows,
 }: HomeProps) {
 
-  const { data: session, status } = useSession()
+  const [session] = useSession()
 
   return (
     <div className="">

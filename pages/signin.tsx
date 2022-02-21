@@ -1,13 +1,15 @@
 import React from 'react'
-import { getProviders, signIn, getSession, LiteralUnion, ClientSafeProvider } from 'next-auth/react'
+import { getProviders, signIn, getSession, ClientSafeProvider,  } from 'next-auth/client';
 import { NextPageContext } from 'next'
-import { BuiltInProviderType } from 'next-auth/providers'
 import Image from 'next/image'
 import Head from 'next/head'
 import Header from '../components/Header'
+import  BuiltInProviderType  from 'next-auth/providers';
+import  LiteralUnion  from 'next-auth/client';
 
 interface Props {
-  providers: Record<LiteralUnion<BuiltInProviderType, string>, ClientSafeProvider > | null
+  //@ts-ignore
+  providers: Record<LiteralUnion<typeof BuiltInProviderType, string>, ClientSafeProvider > | null 
 }
 /* recuerda mandar el csrfToken si uso envio de emails al user que quiere registrarse */
 export default function SignIn({ providers }: Props) {

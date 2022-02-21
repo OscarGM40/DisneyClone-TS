@@ -1,6 +1,6 @@
 import React from 'react'
 import { PopularMovie } from '../interfaces/interfaces'
-import MovieThumbnail from './MovieThumbnail';
+import MovieThumbnail from '../MovieThumbnail';
 
 type Props = {
   results: PopularMovie[] 

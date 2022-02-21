@@ -1,49 +1,22 @@
 import NextAuth from 'next-auth'
 
-import GoogleProvider from "next-auth/providers/google";
+import Providers from "next-auth/providers";
 import { FirebaseAdapter } from "@next-auth/firebase-adapter";
 import { db } from '../../../firebase';
 
-import {
-  collection,
-  query,
-  getDocs,
-  where,
-  limit,
-  doc,
-  getDoc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  runTransaction,
-} from "firebase/firestore";
 
 export default NextAuth({
-  // Configure one or more authentication providers
   providers: [
-     GoogleProvider({
-      clientId: process.env.NEXTAUTH_GOOGLE_ID!,
-      clientSecret: process.env.NEXTAUTH_GOOGLE_SECRET!
+     Providers.Google({
+      clientId: process.env.GOOGLE_ID!,
+      clientSecret: process.env.GOOGLE_SECRET!
    }),
   ],
-  adapter: FirebaseAdapter({
-    db,
-    collection,
-    query,
-    getDocs,
-    where,
-    limit,
-    doc,
-    getDoc,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    runTransaction,
-  }),
+  adapter: FirebaseAdapter( db),
   secret: process.env.NEXTAUTH_SECRET,
-/*     pages:{
+  pages:{
     signIn: '/signin',
-  }    */
+  }    
 })
 
 

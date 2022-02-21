@@ -1,6 +1,6 @@
 import { PlusIcon, XIcon } from "@heroicons/react/solid";
 import { GetServerSideProps } from "next";
-import { getSession, useSession } from "next-auth/react"
+import { getSession, useSession } from "next-auth/client"
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -16,7 +16,7 @@ interface Props {
 const Show = ({show}: Props) => {
 
    console.log(show)
-   const { data: session, status } = useSession();
+   const [session] = useSession();
    const BASE_URL = 'https://image.tmdb.org/t/p/original/';
    const router = useRouter();
    const [showPlayer, setShowPlayer] = useState(false);

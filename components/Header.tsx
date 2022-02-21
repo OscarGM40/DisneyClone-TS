@@ -5,11 +5,11 @@ import {
   SearchIcon,
   StarIcon,
 } from '@heroicons/react/solid'
-import { signIn, signOut, useSession } from 'next-auth/react'
+import { signIn, signOut, useSession } from 'next-auth/client'
 import { useRouter } from 'next/router'
 
 const Header = () => {
-  const { data: session, status } = useSession()
+ const [session] = useSession()
   const router = useRouter()
 
 

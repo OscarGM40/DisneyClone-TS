@@ -1,4 +1,4 @@
-import { signIn } from 'next-auth/react'
+import { signIn } from 'next-auth/client'
 import Head from 'next/head'
 import Image from 'next/image'
 import React from 'react'
