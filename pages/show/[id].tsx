@@ -15,7 +15,6 @@ interface Props {
 }
 const Show = ({show}: Props) => {
 
-   console.log(show)
    const [session] = useSession();
    const BASE_URL = 'https://image.tmdb.org/t/p/original/';
    const router = useRouter();

@@ -15,7 +15,6 @@ interface Props {
 }
 
 const Movie = ({ movie }: Props) => {
-  // console.log(movie)
  const [session] = useSession()
   const BASE_URL = 'https://image.tmdb.org/t/p/original/'
   const router = useRouter()
