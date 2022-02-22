@@ -5,7 +5,7 @@ type Props = {}
 
 const Brands = (props: Props) => {
   return (
-    <section className="mx-auto mt-12 flex max-w-[1810px] flex-col items-center justify-center gap-6 px-8 lg:flex-row select-none">
+    <section className="mx-auto mt-12 flex max-w-[1820px] flex-col items-center justify-center gap-6 px-8 lg:flex-row select-none">
 
       <div className="brand group">
         <Image src="/images/disnep.png" layout="fill" objectFit="cover" />
