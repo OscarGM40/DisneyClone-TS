@@ -1,0 +1,562 @@
+		DISNEY PLUS CLONE BY ILW WITH NEXTJS FIREBASE-AUTH AND TMDB-API
+
+Yt: https://www.youtube.com/watch?v=zMXHYSqltmU&t=241s
+Repo: https://github.com/lukef7fywmrp/disney-clone
+
+Es un proyecto Responsive con SSR usando una API de movies llamada TMDB.Trataré de hacer el deploy con vercel por si acaso.
+
+NOTA: Next es un framework para produccion.Optimiza las Imagenes,tiene soporte para typescript(configuración y compilación),analiticas,enrutamiento basado en el sistema de ficheros.
+
+NOTA:puedo crear un  proyecto de ejemplo(-e) y empezar desde ese,o crear un proyecto normal y agregar tailwind:
+npx create-next-app -e with-tailwindcss <my-project>
+
+Realmente terminaré en el mismo punto asi que no es importante esto.
+
+Puedo ver desde ya el poder de tailwindcss:
+ <div className="flex min-h-screen flex-col items-center justify-center py-2">
+   <Head>
+
+						TAILWIND CSS 
+
+TAILWIND usa un engine llamado JIT(JustInTime).Para activarlo tengo que hacerlo en el tailwind.config.js:
+  module.exports = {
+   mode: 'jit',
+Usando ese motor,puedo pasar cualquier valor simplemente usando corchetes.Por ejemplo, uedo pasar cualquier fondo con bg-[#000000]:
+ <div className="sticky bg-[#040714]">Header</div>
+También puedo usarlo con width,por ejemplo:
+w-[500px] <- aplicará un ancho de 500px
+Recuerda que hay que activarlo añadiendo la propiedad mode: 'jit' en el configfile.
+
+NOTA: la responsiveness es una de las mejores features que tiene TAILWIND,ya que es terriblemente sencilla de implementar.Los breakpoints que usa son:
+sm: desde 640px
+md: desde 768px
+lg:desde 1024px
+xl: desde 1280px
+
+Sabiendo esto,agrego un poco más de padding en cuanto sean tablets:
+ px-10 md:px-12 <- si aplico min-width:768 va a pisarla siempre a la por defecto
+
+IMPORTANTE: en Next <Image /> es un componente.Cada vez que lo use tengo que especificar una altura y anchura o bien un layout.
+
+Para los iconos vamos a usar HeroIcons(tienen version solid y outline,solid es la normal):
+npm install @heroicons/react
+
+IMPORTANTE: los heroicons han sido creados por los creadores de tailwind asi que puedo usar clases tailwind sobre ellos simplemente ya que su integración es total.
+
+NOTA:mas o menos h-4 son unos 16px(puedo multiplicar por 4px cada numero)
+
+Capas de tailwind:
+@tailwind base: esto inyecta los estilos base
+@tailwind components: esto inyecta las clases de componentes y otros plugins
+@tailwind utilities: inyect las clases de utilidad
+
+IMPORTANTE:fijate como esta vez va a traerse todos los pesos para la fuente mediante una url y la directiva @import:
+
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap"); <- es mejor?peor?Diria que es super comodo y parece lo mejor.
+
+Bien,sabiendo las capas,puedo definir cualquier cosa en la capa base y se inyectará como estilos base:
+@layer base {
+  body {
+   background-color: red
+  }
+} <- todo fondo será rojo siempre,ya que son estilos base.Si bien puedo usar Css normal,se recomienda usar @apply y seguir con la sintaxis tailwind.Obviamente es el lugar donde quiero declarar mi fuente,entre otras cosas.
+
+Bien,para cambiar la fuente debo hacer en el archivo de configuración,dentro de la propiedad theme,que es un objeto en la subpropiedad fontFamily,que es otro objeto con las fuentes.El nombre que le dé aqui es el que tengo que usar:
+  theme: {
+    extend: {},
+    fontFamily:{
+      montserrat: ['Montserrat', 'sans-serif'],
+    }
+  },
+  plugins: [],
+}
+Ahora veré que se crea la clase font-montserrat.Increible:
+.font-montserrat {
+  font-family: Montserrat, sans-serif;
+}
+
+NOTA:fijate que la franja de los enlaces el truco estuvo en la propieda transform-origin,la cual no conozco por ser muy asinto y las clases scale-x-0.Siempre puedo copiarlo simplemente
+Fijate también que agrupó con una clase group y despues con la pseudoclase group-hover.Entiendo que en cuanto encuentre un ancestro con la clase group se enlaza a él.
+
+NOTA:para el letter-spacing la clase es tracking-{keyword} donde keyword es wide,wider,.
+
+							CONFIGURAR	NEXT AUTH Y FIREBASE
+
+Vamos a usar la libreria npm NextAuth.js.
+La web es está: https://next-auth.js.org/getting-started/example.
+Esta libreria es muy sencilla de usar y permite una integración con cualquier provider de una forma muy simple(sólo es instalar el adapter segun provider):
+
+Primero Hay que instalar el paquete next-auth.También instalaremos Firebase pues usaremos su Auth y su DB (crear un proyecto FB y enlazarlo a éste),
+>npm i next-auth firebase
+
+Si estoy usando la versión 9 ha recibido major updates.Ahora el código quedaría asi:
+import { initializeApp, getApp, getApps } from 'firebase/app'
+import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
+
+const firebaseConfig = {
+  apiKey: 'YOUR_API_KEY',
+  authDomain: 'YOUR_AUTH_DOMAIN',
+  projectId: 'YOUR_PROJECT_ID',
+  storageBucket: 'YOUR_STORAGE_BUCKET',
+  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+  appId: 'YOUR_APP_ID',
+}
+
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp()
+const db = getFirestore()
+const storage = getStorage()
+
+export { app, db, storage }
+
+IMPORTANTE: dado que estoy en SSR con Next debo mirar si la app está ya inicializada(algo que no tendría que hacer en React):
+const app = |getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+NOTA: tengo que habilitar la Auth en Firebase y con el provider Google(alli debo habilitarlo,confirmar que copia las claves publicas y privadas)
+
+Bien,una vez configurado Firebase en el proyecto hay que configurar NextAuth.Para ello hay que crear un archivo en una ruta concreta con un nombre concreto.
+
+En el archivo pages/api/auth/[...nextauth].js:
+
+import NextAuth from "next-auth"
+import GoogleProvider from "next-auth/providers/google";
+import GithubProvider from "next-auth/providers/github"
+
+export default NextAuth({
+  providers: [
+    GithubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET
+    }),
+     GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!
+   }),
+  ]
+})
+
+Puedo ver aqui todos los providers(realmente tiene todos):
+https://next-auth.js.org/providers
+
+Pero realmente no queda aqui la cosa.No sólo tiene enlace con todos los Providers sino que puedo especificar un Adapter,por defecto usa TypeORM y soporta MySQL,MariaDB,Pstgres,SQLite y MongoDB.Sin embargo puedo pasar el adaptador que quiera y guardar los usuarios en DynamoDB o Firestore por ejemplo.
+
+Esto último es el que queremos.Puedo ver sus adaptadores en la doc también.
+
+Hay que instalarlo:
+@next-auth/firebase-adapter@experimental <- ver la doc que cambia mucho
+
+Me tengo que traer Firestore
+import { FirebaseAdapter } from "@next-auth/firebase-adapter"
+
+Para el error de signIn
+npm install @types/next-auth
+declare module 'next-auth/client'
+
+* El error era porque ha cambiado,ahora es desde next-auth/react
+import { signIn } from 'next-auth/react'
+
+IMPORTANTE:en este punto tengo que agregar las url de redireccionamiento al proyecto de Google.Voy a console.cloud.google busco el proyecto,voy a credenciales y eligo la del medio,la tipo OAuth2.0,alli proporciono mi url de localhost:3000 y la misma pero con /api/auth/callback/google concatenado.
+
+NOTA: en cuanto se actualize deberé ver como se crean tres colecciones en Firestore,almacenando los datos,pues hemos configurado el adapter.
+
+			COMPARTIR LA SESIÓN EN TODA LA APP MEDIANTE SSR
+
+Dado que cada pagina protegida tiene que realizar una petición al servidor es una buena idea compartir la sesión entre todas las páginas.Para ello tengo que usar el wrapper <SessionProvider session={session}>:
+
+export default function App({
+  Component,
+  pageProps: { session, ...pageProps },
+}) {
+  return (
+    <SessionProvider session={session}>
+      {Component.auth ? (
+        <Auth>
+          <Component {...pageProps} />
+        </Auth>
+      ) : (
+        <Component {...pageProps} />
+      )}
+    </SessionProvider>
+
+Una vez la app esté englobada en ese wrapper ya puedo llamar al hook useSession en cualquier punto de mi app,que tendrá visión sobre la sesión.Increible.
+
+IMPORTANTE: compartir la sesión mejora la performance,reduce el tráfico y evita cambios de estado en componentes por renderizarse.Recuerda que el Wrapper va pages/_app.js.
+
+Entonces si tengo una sesión puedo mostrar el avatar y los links,y además le enlazamos al avatar la función para hacer logout:
+
+import { signIn, signOut, useSession } from 'next-auth/react'
+
+    { !session ? (
+      <button
+        className="ml-auto rounded border px-4 py-1.5 text-base font-medium uppercase tracking-widest transition duration-200 hover:bg-white hover:text-black"
+        /* si signIn va con un arg iré directo a su launcher */
+        onClick={() => signIn()} 
+        > Login 
+      </button>
+       ): (
+        <img 
+          src={session.user?.image!}
+          alt=""
+          onClick={() => signOut()}
+          className="ml-auto rounded-full h-[54px] w-[54px] object-cover cursor-pointer"  />
+    )}
+
+NextJs también optimiza las fuentes.
+
+						DATA FETCHING
+
+1- si uso getServerSideProps Next pre-renderizará esa pagina usando la data retornada por esa función getServerSideProps.
+getServerSideProps sólo se ejecuta en el servidor y nunca en el browser
+2- si uso getStaticProps Next pre-renderizará esa pagina en build time con las props retornadas por getStaticProps.
+Debo usarla si los datos necesarios para la representación de la página están disponibles en el momento de la construcción antes de la solicitud del usuario
+Dado que se ejecuta en tiempo de construcción no tiene acceso a la request,y por ello no podria acceder a queryParams.Investigar más.
+
+Resumen: al usar getServerSideProps puedo pre-fetchear datos,todo se ejecuta en el server y es entregado al browser
+
+export async function getServerSideProps(ctx){
+  /* no confundir getSession con useSession */
+  const session = await getSession(ctx);  
+}
+getSession puede ser llamado tanto en el cliente como en el server para retornar una session asincronamente.Devuelve una Promise con el objeto session o null si no existe sesión.
+
+						TYPESCRIPT AND NEXT
+
+Para los objetos request y response:
+import type { NextApiRequest, NextApiResponse } from 'next'
+
+export default (req: NextApiRequest, res: NextApiResponse) => {
+  res.status(200).json({ name: 'John Doe' })
+}
+
+Y para los métodos de data fetching usar genéricos:
+
+interface Props {
+  host: string;
+}
+
+export const getStaticProps: GetStaticProps<Props> = async () => {
+  return {
+    props: {
+      host: process.env.DB_HOST.toString(),
+    },
+  };
+};
+NOTA:recuerda que en Next las pages van en /pages.Entonces al final tengo dos opciones para mandar la session,o bien la abastezco yo llamando a getSession y mandandola por props en el pre-render del server:
+
+export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) => {
+  const session = await getSession(ctx)
+
+  return {
+    props: {
+      session: session,
+    },
+  }
+}
+Ahora la recibo en el componente del mismo archivo:
+const Header = ({session}) => {
+O bien usamos la opción del wrapper,la cual obviamente parece mucho mejor.Esta vez hay que llamar a useSession en vez de a getSession
+
+Fijate que tiene toda la razón,este proyecto es interesantísimo.Combinar SSR con Tailwind,usar los sliders,NextAuth... es simplemente genial.
+
+Sigamos.Cambiaremos el div de la navbar por un header para mantener la semántica.IMPORTANTE: <main>,<section>, <header>, son todos simplemente un div,asi que no tengo que tener miedo de usarlos
+
+				LIBRERIA REACT-RESPONSIVE-CAROUSEL
+
+Con esta libreria puedo implementar un carousel fácil.Es muy usada entre la comunidad:
+npm i react-responsive-carousel
+Despues sólo hay que traer el Wrapper y los estilos.
+
+import "react-responsive-carousel/lib/styles/carousel.min.css";
+import { Carousel } from 'react-responsive-carousel';
+
+No puede ser más fácil usarlo,simplemente meto cada imagen en un div y todos los div dentro del wrapper <Carousel>:
+     <Carousel
+        autoPlay={true}
+        infiniteLoop={true}
+        showStatus={false} //quitar
+        showIndicators={true} // bolitas del medio
+        showThumbs={false} //thumbnails inferiores
+        showArrows={false} // flechas de los lados
+        interval={5000}
+      >
+      
+        <div>
+          <img loading='lazy' src="/images/slider-1.jpg" alt="slider-1" />
+        </div>
+      
+        <div>
+          <img loading='lazy' src="/images/slider-2.jpg" alt="slider-2" />
+        </div>
+     ....
+ </Carousel>
+
+IMPORTANTE: este Carousel tiene enlace con Youtube,y varias opciones interesantes,como desplazamiento en vertical o con fade,alturas diferentes,etc...Además viene responsive,mobile friendly,compatible con SSR(mediante loading=lazy?) y soporta enlaces externos como el mencionado con Youtube.
+
+Fijate que no podia usar Image en este caso porque rompia la responsiveness asi que usó una <img>,que perfectamente puedo usar en Next(aunque usó loading en lazy
+
+							ZONA DE LAS BRANDS
+
+Fijate que Tailwind es mobile first asi que declaro una section por semántica en direction column y la cambio a row desde 768px.
+
+const Brands = (props: Props) => {
+  return (
+    <section className="flex flex-col md:flex-row justify-cednter items-center mt-20 gap-6 px-8 max-w-[1400px] ">
+
+  </section>) }
+
+NOTA:al usar el mode: 'jit' puedo pasarle valores custom(ver cual encaja bien con el carousel).De momento le daré 1400 a las brands,como hace él(siempre un poco menos que Carousel).
+
+Bien,la zona de las imagenes con un video incrustado la vamos a crear usando el componente Image de Next.Fijate que esta vez le dió medidas al padre asi que usó layout fill ,pero ojo,si uso layout fill debe ir acompañado de objectFit(usaremos cover en este caso).Y no solo eso,sino que el padre debe estar en relative:
+
+  <div className="brand group relative">
+     <Image src="/images/disnep.png" layout="fill" objectFit='cover'/>
+  </div>
+
+Ahora si,ya veré una imagen en ese div de 48x48.Recuerda,usar layout implica posicionar al padre en relative,darle medidas a él,y usar objectFit con lo que crea correcto.Diria que lo bueno viene ahora,ya que puedo hacer ese div responsive
+
+IMPORTANTE: también vamos a tener un video.Si bien puedo usar esto:
+ <video src="/videos/disney.mp4"></video>
+
+se recomienda usar <source> para la fuente de esta forma:
+
+<video autoPlay loop playsInline className="hidden group-hover:inline rounded-lg object-cover">
+   <source src="/videos/disney.mp4" />
+</video> 
+
+Fijate que solo lo veré cuando haga hover sobre el group.Fijate que para usar propiedades como transform o transition primero especifico el tipo(transform | transition) y despues lo que quiero:
+"transfom hover:scale-105"
+"transition duration-200" <- por defecto está en 150ms
+Fijate que además transition ya está optimizado targeteando sólo a color,border,background etc,a las propiedades más usadas,pero siempre puedo usar transition-all o ser más especifico.
+
+Fijate que las medidas del video deben retocarse aún.
+
+	2H23M APLICAR UN PATTERN O UNA IMAGE AL BACKGROUND CON TAILWIND
+
+En el tailwindcss,dentro del theme puedo pasar en la propiedad extend propiedades como backgroundImage.Puedo ver más sobre esto en la documentación pero tailwindcss me permite customizar cualquier propiedad:
+
+  theme: {
+    extend: {
+      backgroundImage: theme => ({
+        home:"url('/images/background.png')",
+      })
+    }, 
+
+IMPORTANTE:falta aplicar esta clase(ahora tendré una clase bg-home que me trae esta imagen.Fijate como la va a aplicar el coleguita:
+
+* El main es el punto correcto.Con ::after vamos a meter un div,posicionarlo en absoluta(y obviamente posicionar a main en relative).Con inset-0 le ponemos en top0,bottom0,right0 y left0.Hay que bajarlo a z-index:-1 para ponerlo debajo y darle un min-height de 100vh.Y también cover center attachment fixed no-repeat:
+ 
+<main className="relative min-h-screen after:bg-home after:inset-0 after:bg-center after:bg-cover after:bg-no-repeat after:bg-fixed after:absolute after:z-[-1]">
+   <Slider />
+   <Brands />
+ </main>
+
+					SECTION OF MOVIE SLIDERS - TMBD API
+
+Fijate que vamos a pre-fetchear las movies en el server.Crearé varias colecciones(movies,shows,series...)
+Bien,lo primero es registrarse en the movie database(tmdb) y acceder a settings y alli en API.
+
+Alli veré la API key v3 y la key v4 y el enlace a la Web con la documentacion.Es realmente sencillo,puedo usar la v3 como queryParams o la v4,que es un token que soporta queryParams o ir por el Header "Authorization":"Bearer <token>".Ejemplo con v3:
+
+https://api.themoviedb.org/3/movie/{movie_id}?api_key=<<api_key>>&language=en-US
+
+Y si voy con la key v4 debo usar el header asi,lo típico:
+"Authorization": "Bearer <<access_token>>"
+
+NOTA:con React todas estas peticiones se hacen en build time,es decir,en el browser(y lo cual puedo conseguir con getStaticProps),pero lo vamos a pre-fetchear en el server para que cuando llegue al browser ya esté la data.
+Esto mejora el performance y deja una app muy limpia y rápida
+
+NOTA:si bien para las imagenes si que tengo que especificar un dominio para hacer este fetch de JSON no :
+
+module.exports = { <- SOLO PARA IMAGENES
+  images:{
+    domains: [
+      "res.cloudinary.com",
+    ],
+  }
+}
+
+Realmente fue muy sencillo pasar la data.Con Promise.all fetcheamos en paralelo en el server y las paso por props al componente:
+
+  const [
+    popularMoviesRes,
+    popularShowsRes,
+    topRatedMoviesRes,
+    topRatedShowsRes,
+  ] = await Promise.all([
+    fetch(
+      `${process.env.API_URL}/movie/popular?api_key=${process.env.API_KEY}&language=en-US&page=1`
+    ),
+    fetch(
+      `${process.env.API_URL}/tv/popular?api_key=${process.env.API_KEY}&language=en-US&page=1`
+    ),
+    fetch(
+      `${process.env.API_URL}/movie/top_rated?api_key=${process.env.API_KEY}&language=en-US&page=1`
+    ),
+    fetch(
+      `${process.env.API_URL}/tv/top_rated?api_key=${process.env.API_KEY}&language=en-US&page=1`
+    ),
+  ])
+
+  const [popularMovies, popularShows, top_ratedMovies, top_ratedShows] =
+    await Promise.all([
+      popularMoviesRes.json(),
+      popularShowsRes.json(),
+      topRatedMoviesRes.json(),
+      topRatedShowsRes.json(),
+    ])
+  /* results devuelve un array de 20 resultados por pagina */
+  return {
+    props: {
+      session: session,
+      popularMovies: popularMovies.results,
+      popularShows: popularShows.results,
+      top_ratedMovies: top_ratedMovies.results,
+      top_ratedShows: top_ratedShows.results,
+    },
+  }
+}
+
+Ahora ya es pasar a los componentes las props:
+<MoviesCollection results={popularMovies} title="Popular Movies" />
+<ShowsCollection results={popularShows} title="Popular Shows" />
+<MoviesCollection results={top_ratedMovies} title="Top Rated Movies" />
+<ShowsCollection results={top_ratedShows} title="Top Rated Shows" />
+
+Cada xxxCollection va a lucir asi:
+
+type Props = {
+  results: PopularMovie[] 
+  title: string
+}
+const MoviesCollection = ({results,title}: Props) => {
+  return (
+    <div className="relative flex flex-col space-y-2 mt-10 px-8 max-w-[1600px] mx-auto">
+      <h2 className="font-semibold">{title}</h2>
+      {results.map(result => (
+        <MovieThumbnail key={result.id} result={result} />
+      ))}
+    </div>
+  )
+}
+Obviamente uno para Movies y otro para Shows.Fijate que al compartir información MovieThumbnail o ShowThumbnail también los puedo reusar.Genial
+
+IMPORTANTE: para ocultar la scrollbar vamos a usar un plugin de Tailwind:
+npm i tailwind-scrollbar-hide
+* Como cualquier plugin hay que declararlo:
+plugins:[
+  require('tailwind-scrollbar-hide')
+  ]
+Usage:
+<div class="w-4 scrollbar-hide md:scrollbar-default">...</div> <- puedo recobrar la scroll cuando quiera
+
+Fijate que bonito queda declara un border de 2 o 3px,darle un color blanco,oscurecerlo con border-opacity-10 y aclararlo a ese primer lugar con hover:border-opacity-80.
+Además,acompañarlo con un pequeño transform e incluso un scale a 1.05.Probar esto
+
+				PRE-FETCHING DE UNA MOVIE O UN SHOW
+
+Una vez que el usuario haga click en un resource vamos a mandarle a otra página dinámica,que hará el pre-fetch de una movie o una serie(show).
+Para acceder a ese id que necesito para hacer la petición lo tengo en context.query:
+export const getServerSideProps:GetServerSideProps<ServerProps> = async (context) => {
+  const { id } = context.query <- fijate que esto es un poco más limpio que hacer const id = context.query.id pues tengo que escribir menos y no repito id.
+  
+							APPEND TO RESPONSE
+
+Esta API permite pasarle el queryParam append_to_response a algunos endpoints.Justo el que usaremos para pedir una movie permite añadir esta opción,y asi, aparte de traer datos como el titulo,año,etc puedo pedir la movie o el trailer,y lo hará en una única petición.    
+Por ejemplo,puedo pedir los details,el video y las imagenes:
+https://api.themoviedb.org/3/movie/157336?api_key={api_key}&append_to_response=videos,images
+Increible(GraphQL??)
+
+
+Bien,en cuanto al componente va a ser el Header mas una imagen a la que se le resta la altura de ese Header.Fijate como lo calculó con tailwindcss:
+div className="relative min-h-[calc(100vh-72px)] <- lo pone en relative porque va a poner sobre la imagen el texto.Muy bonito.
+
+Fijate que el texto lo va a cambiar de ubicación segun tamaño:
+<div className="absolute inset-y-28 inset-x-6 md:inset-y-auto md:inset-x-4" <- de nuevo espectacular.
+
+NOTA:fijate que puedo apuntar a la opcaity con bg-black/60, es lo mismo que decir opacity:0.6;
+
+Cuando hago click en el boton Trailer pongo un div en absoluta que ocupe todo y lo transiciono hacia opacity de 0.5:
+{ showPlayer && <div className="absolute inset-0 z-50 h-full w-full bg-black opacity-50 transition duration-200>}
+
+Genial,y ahora tengo otro div que es el player.Fijate que es el primero que va a usar clases condicionalmente.Y fijate como los template strings van a fusionar con Tailwind a las mil maravillas:
+
+<div className={`absolute inset-x[7%] md:inset-x[13%] top-3 overflow-hidden rounded transition duration-1000 ${ showPlayer ? 'opacity-100 z-50' : 'opacity-0'}`}
+El div siempre existe,pero si el boleano esta en false la opacity será 0,mientras que si cambia a true la opacity irá al 100.Transition duration de 1000 hará el resto.Es sencillo de entender, y muy bonito.
+El resto es pintar el reproductor al gusto:
+
+					INSTALLING REACT PLAYER
+
+La libreria externa react-player permite reproducir videos de Youtube(usando la API Youtube IFrame Player).Es muy popular y completamente responsive:
+npm add react-player
+
+** Supported media **
+- YouTube videos use the YouTube iFrame Player API
+- Facebook videos use the Facebook Embedded Video Player API
+- SoundCloud tracks use the SoundCloud Widget API
+- Streamable videos use Player.js
+- Vidme videos are no longer supported
+- Vimeo videos use the Vimeo Player API
+- Wistia videos use the Wistia Player API
+- Twitch videos use the Twitch Interactive Frames API
+- DailyMotion videos use the DailyMotion Player API
+- Vidyard videos use the Vidyard Player API
+- Kaltura's react-player implementation uses the embed.ly Player.js API but Kaltura specific APIs are also available, see Kaltura Player API
+- Supported file types are playing using <video> or <audio> elements
+     - HLS streams are played using hls.js
+     - DASH streams are played using dash.justify
+
+IMPORTANTE: para hacer el reproductor responsive hay que fijar el alto y ancho en 100% del componenet ReactPlayer y a su vez englobar a este en un contenedor con un aspect-ratio fixed(lo conseguiré asi):
+ 
+ <div className='player-wrapper'>
+        <ReactPlayer
+          className='react-player'
+          url='https://www.youtube.com/watch?v=ysz5S6PUM-U'
+          width='100%'
+          height='100%'
+        />
+ </div>
+
+.player-wrapper {
+  position: relative;
+  padding-top: 56.25% /* Player ratio: 100 / (1280 / 720) */
+}
+
+.react-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+Recuerda select-none sobre las imagenes para no ver el fondo azul de seleccion.
+
+Recuerda usar tags semánticas,como section o header,ya que no es buena práctica usar solo divs.
+Fijate que hemos dejado el index muy limpio.Realmente ha usado buenas prácticas por todos los lados,es un honor ver programar asi,asinto -_-
+
+					CUSTOM LOGIN
+
+Añadir la propiedad pages en el  pages/api/auth/[...nextauth].js:
+
+  pages: {
+    signIn: '/auth/signin',
+    signOut: '/auth/signout',
+    error: '/auth/error', // Error code passed in query string as ?error=
+    verifyRequest: '/auth/verify-request', // (used for check email message)
+    newUser: '/auth/new-user' // New users will be directed here on first sign in (leave the property out if not of interest)
+  }
+
+Ver proyecto,pero ahora simplemente es crear esa pagina (/auth/signin) rescatando los providers,iterando sobre ellos para mostrar un botón con su icono ,nombre,etc y además puedo incluso usar un formulario propio,que debe apuntar a la url que me digan.
+
+NOTA:fijate que tengo varios max-width y max-height ya predefinidos:
+
+max-w-screen-sm: max-width de 640px
+max-w-screen-md: max-width de 768px
+max-w-screen-lg: max-widht de 1024px
+max-w-screen-xl: max-width de 1280px
+max-w-screen-2xl: max-width de 1536px
+
+							DEPLOY TO VERCEL
+
+NOTA: Vercel creó NextJs,asi que está altamente optimizado para hacer el deploy de una app desarrollada en NextJS.
+Bien,por último vamos a desplegarlo en Vercel.Solo hay que crear un repositorio en GitHub,enlazarlo con Git e ir a Vercel y logearme con la misma cuenta de Github.Alli creo un nuevo proyecto,lo importo desde Github y ojo,necesitará las environments correctas.
+Este paso es muy importante,ya que tengo el .env.local ignorado,asi que tengo que agregarlas una a una.
+Además,puedo observar que primero necesito saber el dominio que me darán para agregar un par de variables asi que las tendré que añadir despues.
